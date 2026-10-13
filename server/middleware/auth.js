@@ -1,5 +1,9 @@
 import jwt from 'jsonwebtoken';
 
+function normalizeRole(role) {
+  return (role || '').toString().toLowerCase().replace(/\s+/g, '_');
+}
+
 export function authenticate(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
@@ -15,7 +19,9 @@ export function authenticate(req, res, next) {
 export function allow(...roles) {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Forbidden: insufficient role' });
+    const currentRole = normalizeRole(req.user.role);
+    const allowedRoles = roles.map(normalizeRole);
+    if (!allowedRoles.includes(currentRole)) return res.status(403).json({ error: 'Forbidden: insufficient role' });
     next();
   };
 }

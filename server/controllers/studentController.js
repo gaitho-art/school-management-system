@@ -91,7 +91,6 @@ export async function createStudent(req, res) {
   try {
     const b = req.body;
     
-    // Safely find the highest admission number to prevent duplicates
     const [rows] = await pool.query("SELECT admission_number FROM students WHERE admission_number LIKE 'ADM-%'");
     let nextNum = 1;
     if (rows.length > 0) {
@@ -101,10 +100,11 @@ export async function createStudent(req, res) {
     const admission_number = 'ADM-' + String(nextNum).padStart(3, '0');
     
     const toNull = (val) => (val === undefined || val === '') ? null : val;
+    const photoPath = req.file ? req.file.filename : toNull(b.photo_path);
     
     const [result] = await pool.execute(
-      'INSERT INTO students (admission_number, full_name, gender, date_of_birth, current_grade_id, current_stream_id, guardian_name, guardian_phone, medical_conditions, uses_transport, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "active")',
-      [admission_number, toNull(b.full_name), toNull(b.gender), toNull(b.date_of_birth), toNull(b.current_grade_id), toNull(b.current_stream_id), toNull(b.guardian_name), toNull(b.guardian_phone), toNull(b.medical_conditions), b.uses_transport ? 1 : 0]
+      'INSERT INTO students (admission_number, full_name, gender, date_of_birth, current_grade_id, current_stream_id, guardian_name, guardian_phone, medical_conditions, birth_cert_no, nationality, religion, photo_path, uses_transport, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "active")',
+      [admission_number, toNull(b.full_name), toNull(b.gender), toNull(b.date_of_birth), toNull(b.current_grade_id), toNull(b.current_stream_id), toNull(b.guardian_name), toNull(b.guardian_phone), toNull(b.medical_conditions), toNull(b.birth_cert_no), toNull(b.nationality), toNull(b.religion), toNull(photoPath), b.uses_transport ? 1 : 0]
     );
     
     await logActivity(req.user, 'CREATE_STUDENT', 'students', 'Added student: ' + b.full_name);

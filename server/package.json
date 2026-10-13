@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "init-admin": "node scripts/initAdmin.js"
+    "init-admin": "node scripts/initAdmin.js",
+    "seed:dummy": "node scripts/seedDummyData.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

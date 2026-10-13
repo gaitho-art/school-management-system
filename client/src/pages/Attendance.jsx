@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import { FiPrinter, FiDownload } from 'react-icons/fi';
 
 export default function Attendance() {
   const [streams, setStreams] = useState([]);
@@ -7,6 +8,8 @@ export default function Attendance() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [report, setReport] = useState([]);
+  const [reportPeriod, setReportPeriod] = useState('month');
 
   useEffect(() => {
     api.get('/streams').then(r => setStreams(r.data)).catch(() => {});
@@ -21,10 +24,6 @@ export default function Attendance() {
     }).catch(() => setLoading(false));
   };
 
-  const handleStreamChange = (e) => {
-    setSelStream(e.target.value);
-  };
-
   const setStatus = (id, status) => {
     setStudents(students.map(s => s.id === id ? { ...s, status } : s));
   };
@@ -35,14 +34,44 @@ export default function Attendance() {
     alert('Attendance saved successfully!');
   };
 
+  const generateReport = async () => {
+    if (!selStream) return;
+    try {
+      const res = await api.get(`/attendance/report?stream_id=${selStream}&period=${reportPeriod}&date=${date}`);
+      setReport(res.data);
+    } catch (err) {
+      setReport([]);
+    }
+  };
+
+  const printReport = () => window.print();
+  const downloadReport = () => {
+    const rows = report.map((row) => `${row.label},${row.present},${row.absent},${row.percentage}`).join('\n');
+    const blob = new Blob([`Period,Present,Absent,Attendance %\n${rows}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'attendance-report.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Attendance Register</h1>
+      <div className="flex flex-col md:flex-row justify-between gap-4">
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Attendance Register</h1>
+        <div className="flex gap-2">
+          <button onClick={printReport} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700 text-white"><FiPrinter /> Print</button>
+          <button onClick={downloadReport} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white"><FiDownload /> Download</button>
+        </div>
+      </div>
       
       <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-soft flex flex-col md:flex-row items-end gap-4">
         <div className="flex-1 w-full">
           <label className="font-semibold text-sm block mb-1 text-slate-600 dark:text-slate-300">Select Class</label>
-          <select value={selStream} onChange={handleStreamChange} className="w-full px-4 py-2.5 border rounded-xl dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+          <select value={selStream} onChange={(e) => setSelStream(e.target.value)} className="w-full px-4 py-2.5 border rounded-xl dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
             <option value="">Select Class...</option>
             {streams.map(s => <option key={s.id} value={s.id}>{s.grade_name} - {s.name}</option>)}
           </select>
@@ -54,6 +83,51 @@ export default function Attendance() {
         <button onClick={loadAttendance} className="bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30">
           Load Register
         </button>
+      </div>
+
+      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-soft">
+        <div className="flex flex-col md:flex-row items-end gap-3">
+          <div className="flex-1">
+            <label className="font-semibold text-sm block mb-1 text-slate-600 dark:text-slate-300">Attendance Report Period</label>
+            <select value={reportPeriod} onChange={e => setReportPeriod(e.target.value)} className="w-full px-4 py-2.5 border rounded-xl dark:bg-slate-700 dark:border-slate-600">
+              <option value="month">Monthly</option>
+              <option value="term">Termly</option>
+            </select>
+          </div>
+          <button onClick={generateReport} className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700">Generate Report</button>
+        </div>
+        {report.length > 0 && (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left min-w-[700px]">
+              <thead className="bg-slate-50 dark:bg-slate-700/50 border-b dark:border-slate-600">
+                <tr>
+                  <th className="p-3">Student</th>
+                  <th className="p-3">Adm No</th>
+                  <th className="p-3">Days Present</th>
+                  <th className="p-3">Days Absent</th>
+                  <th className="p-3">Attendance %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.map((row) => {
+                  const presentCount = row.records?.filter((r) => r.status === 'present').length || 0;
+                  const absentCount = row.records?.filter((r) => r.status === 'absent').length || 0;
+                  const total = presentCount + absentCount;
+                  const percentage = total > 0 ? Math.round((presentCount / total) * 100) : 0;
+                  return (
+                    <tr key={row.student_id} className="border-b dark:border-slate-700">
+                      <td className="p-3">{row.student_name}</td>
+                      <td className="p-3">{row.admission_number}</td>
+                      <td className="p-3">{presentCount}</td>
+                      <td className="p-3">{absentCount}</td>
+                      <td className="p-3">{percentage}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {students.length > 0 && (

@@ -3,6 +3,7 @@ import { FiHome, FiSettings, FiUsers, FiLogOut, FiMenu, FiUser, FiBook, FiAward,
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import Breadcrumb from '../components/Breadcrumb';
+import { canAccessRoute, routeAccess } from '../utils/roleAccess';
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: FiHome },
@@ -24,6 +25,8 @@ export default function MainLayout() {
   const [dark, setDark] = useState(localStorage.theme === 'dark');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  const visibleNav = nav.filter((item) => canAccessRoute(user?.role, routeAccess[item.to.replace('/', '') || 'dashboard'] || []));
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
     localStorage.theme = dark ? 'dark' : 'light';
@@ -39,7 +42,7 @@ export default function MainLayout() {
           </button>
         </div>
         <nav className="space-y-1 flex-1 overflow-y-auto">
-          {nav.map((n) => (
+          {visibleNav.map((n) => (
             <NavLink key={n.to} to={n.to} end className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
               isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
             }`}>
