@@ -39,6 +39,7 @@ const roleNames = [
   'admin',
   'principal',
   'deputy',
+  'teacher',
   'class_teacher',
   'bursar',
   'librarian',
@@ -126,6 +127,7 @@ const userSeedRows = [
   { role: 'principal', full_name: 'Mary Kamau', email: 'principal@demo.school', username: 'principal', phone: '+254700000002', password: 'Demo@2026' },
   { role: 'deputy', full_name: 'Samuel Otieno', email: 'deputy@demo.school', username: 'deputy', phone: '+254700000003', password: 'Demo@2026' },
   { role: 'bursar', full_name: 'Lucy Achieng', email: 'bursar@demo.school', username: 'bursar', phone: '+254700000004', password: 'Demo@2026' },
+  { role: 'teacher', full_name: 'Jane Waweru', email: 'teacher@demo.school', username: 'teacher', phone: '+254700000008', password: 'Demo@2026' },
   { role: 'admissions', full_name: 'Rahab Ndungu', email: 'admissions@demo.school', username: 'admissions', phone: '+254700000005', password: 'Demo@2026' },
   { role: 'librarian', full_name: 'James Kibet', email: 'librarian@demo.school', username: 'librarian', phone: '+254700000006', password: 'Demo@2026' },
   { role: 'store_keeper', full_name: 'Naomi Chebet', email: 'store@demo.school', username: 'store', phone: '+254700000007', password: 'Demo@2026' },
@@ -439,13 +441,12 @@ async function upsertTeachers(departmentMap, userMap) {
 
   for (const teacher of teacherSeedRows) {
     const departmentId = departmentMap[teacher.department];
-    const userId = userMap[teacher.email] ? null : null;
-    const teacherUserId = userMap['classteacher1'] || null;
+    const teacherUserId = teacher.full_name === 'Jane Waweru' ? userMap.teacher || null : null;
 
     await pool.execute(
       `INSERT INTO teachers (user_id, full_name, teacher_number, tsc_number, national_id, qualification, department_id, phone, email, address, employment_date, salary, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
-       ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), qualification = VALUES(qualification), department_id = VALUES(department_id), phone = VALUES(phone), email = VALUES(email), salary = VALUES(salary)`,
+       ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), full_name = VALUES(full_name), qualification = VALUES(qualification), department_id = VALUES(department_id), phone = VALUES(phone), email = VALUES(email), salary = VALUES(salary)`,
       [teacherUserId, teacher.full_name, teacher.teacher_number, `TS${teacher.teacher_number.split('-')[1]}`, `NAT-${teacher.teacher_number.split('-')[1]}`, teacher.qualification, departmentId, teacher.phone, teacher.email, 'School compound, Nairobi', '2022-01-15', teacher.salary]
     );
     teacherMap[teacher.teacher_number] = teacher.teacher_number;

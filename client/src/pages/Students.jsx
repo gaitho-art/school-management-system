@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { FiPlus, FiSearch, FiTrash } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
+import { normalizeRole } from '../utils/roleAccess';
 
 export default function Students() {
+  const { user } = useAuth();
+  const isTeacher = normalizeRole(user?.role) === 'teacher';
   const [students, setStudents] = useState([]);
   const [grades, setGrades] = useState([]);
   const [filterGrade, setFilterGrade] = useState('');
@@ -42,9 +46,11 @@ export default function Students() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Students</h1>
-        <Link to="/students/add" className="bg-blue-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30">
-          <FiPlus /> Register Student
-        </Link>
+        {!isTeacher && (
+          <Link to="/students/add" className="bg-blue-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30">
+            <FiPlus /> Register Student
+          </Link>
+        )}
       </div>
       
       <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-soft flex flex-col md:flex-row items-center gap-4">
@@ -101,8 +107,8 @@ export default function Students() {
                     </span>
                   </td>
                   <td className="p-5 flex gap-4">
-                    <Link to={`/students/${s.id}`} className="text-blue-500 hover:text-blue-600 transition-colors font-medium">View/Edit</Link>
-                    <button onClick={() => handleDelete(s.id)} className="text-red-500 hover:text-red-600 transition-colors flex items-center gap-1 font-medium"><FiTrash /> Delete</button>
+                    <Link to={`/students/${s.id}`} className="text-blue-500 hover:text-blue-600 transition-colors font-medium">{isTeacher ? 'View' : 'View/Edit'}</Link>
+                    {!isTeacher && <button onClick={() => handleDelete(s.id)} className="text-red-500 hover:text-red-600 transition-colors flex items-center gap-1 font-medium"><FiTrash /> Delete</button>}
                   </td>
                 </tr>
               ))

@@ -8,6 +8,8 @@ export default function AddTeacher() {
     full_name: '',
     phone: '',
     email: '',
+    username: '',
+    password: '',
     qualification: '',
     tsc_number: '',
     national_id: '',
@@ -30,7 +32,7 @@ export default function AddTeacher() {
       await api.post('/teachers', data, { headers: { 'Content-Type': 'multipart/form-data' } });
       navigate('/teachers');
     } catch (err) {
-      setMsg('Registration failed');
+      setMsg(err.response?.data?.error || 'Registration failed');
     }
   };
 
@@ -43,6 +45,8 @@ export default function AddTeacher() {
           <input required placeholder="Full Name" value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} className="w-full px-3 py-2 border rounded dark:bg-slate-700" />
           <input required placeholder="Phone Number" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="w-full px-3 py-2 border rounded dark:bg-slate-700" />
           <input type="email" placeholder="Email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full px-3 py-2 border rounded dark:bg-slate-700" />
+          <input required autoComplete="username" placeholder="Login username" value={form.username} onChange={e => setForm({...form, username: e.target.value})} className="w-full px-3 py-2 border rounded dark:bg-slate-700" />
+          <input required type="password" minLength={8} autoComplete="new-password" placeholder="Login password (at least 8 characters)" value={form.password} onChange={e => setForm({...form, password: e.target.value})} className="w-full px-3 py-2 border rounded dark:bg-slate-700" />
           <input placeholder="Qualification (e.g. BEd Maths)" value={form.qualification} onChange={e => setForm({...form, qualification: e.target.value})} className="w-full px-3 py-2 border rounded dark:bg-slate-700" />
           <input placeholder="TSC Number" value={form.tsc_number} onChange={e => setForm({...form, tsc_number: e.target.value})} className="w-full px-3 py-2 border rounded dark:bg-slate-700" />
           <input placeholder="ID Number" value={form.national_id} onChange={e => setForm({...form, national_id: e.target.value})} className="w-full px-3 py-2 border rounded dark:bg-slate-700" />
@@ -57,7 +61,7 @@ export default function AddTeacher() {
           <span>{photo ? photo.name : 'Upload teacher passport photo or document'}</span>
           <input type="file" accept="image/*,.pdf,.doc,.docx" className="hidden" onChange={(e) => setPhoto(e.target.files?.[0] || null)} />
         </label>
-        <button className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Register Teacher</button>
+        <button className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Create Teacher Account</button>
       </form>
     </div>
   );

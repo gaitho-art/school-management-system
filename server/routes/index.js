@@ -3,7 +3,7 @@ import { login, me } from '../controllers/authController.js';
 import { getProfile, updateProfile } from '../controllers/schoolController.js';
 import { getStats } from '../controllers/dashboardController.js';
 import { getStudents, getStudentById, createStudent, updateStudent, deleteStudent, addFeePayment, addStudentCharge, addExamResult, deleteExamResult, importStudents } from '../controllers/studentController.js';
-import { getTeachers, createTeacher } from '../controllers/teacherController.js';
+import { getTeachers, createTeacher, createTeacherAccount } from '../controllers/teacherController.js';
 import { getGrades, getStreams, getSubjects } from '../controllers/metadataController.js';
 import { assignClassTeacher, getClassTeachers } from '../controllers/classTeacherController.js';
 import { assignTeacherSubject, getAssignments } from '../controllers/assignmentController.js';
@@ -29,8 +29,8 @@ router.get('/grades', authenticate, getGrades);
 router.get('/streams', authenticate, getStreams);
 router.get('/subjects', authenticate, getSubjects);
 
-router.get('/students', authenticate, allow('admin', 'director', 'head_master', 'headmaster', 'admissions'), getStudents);
-router.get('/students/:id', authenticate, allow('admin', 'director', 'head_master', 'headmaster', 'admissions'), getStudentById);
+router.get('/students', authenticate, allow('admin', 'director', 'head_master', 'headmaster', 'admissions', 'teacher', 'class_teacher'), getStudents);
+router.get('/students/:id', authenticate, allow('admin', 'director', 'head_master', 'headmaster', 'admissions', 'teacher', 'class_teacher'), getStudentById);
 router.post('/students', authenticate, allow('admin', 'admissions'), upload.single('photo'), createStudent);
 router.post('/students/import', authenticate, allow('admin', 'admissions'), upload.single('file'), importStudents);
 router.put('/students/:id', authenticate, allow('admin', 'admissions'), updateStudent);
@@ -42,6 +42,7 @@ router.delete('/exams/results/:id', authenticate, allow('admin', 'director', 'he
 
 router.get('/teachers', authenticate, getTeachers);
 router.post('/teachers', authenticate, allow('admin'), upload.single('photo'), createTeacher);
+router.post('/teachers/:id/account', authenticate, allow('admin'), createTeacherAccount);
 
 router.get('/class-teachers', authenticate, getClassTeachers);
 router.post('/class-teachers', authenticate, allow('admin'), assignClassTeacher);
@@ -59,8 +60,8 @@ router.get('/expenses', authenticate, getExpenses);
 router.post('/expenses', authenticate, allow('admin', 'bursar'), addExpense);
 router.delete('/expenses/:id', authenticate, allow('admin', 'bursar'), deleteExpense);
 
-router.get('/finance/overview', authenticate, getFinanceOverview);
-router.get('/finance/transactions', authenticate, getTransactions);
+router.get('/finance/overview', authenticate, allow('admin', 'director', 'head_master', 'headmaster', 'bursar'), getFinanceOverview);
+router.get('/finance/transactions', authenticate, allow('admin', 'director', 'head_master', 'headmaster', 'bursar'), getTransactions);
 
 router.get('/attendance', authenticate, getAttendance);
 router.get('/attendance/report', authenticate, getAttendanceReport);

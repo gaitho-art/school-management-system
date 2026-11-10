@@ -1,8 +1,18 @@
 import { pool } from '../config/db.js';
 import { logActivity } from '../middleware/logActivity.js';
+import { normalizeRole } from '../middleware/auth.js';
 import * as XLSX from 'xlsx';
 
 export async function getStudents(req, res) {
+  if (normalizeRole(req.user.role) === 'teacher') {
+    const [rows] = await pool.query(`
+      SELECT s.id, s.admission_number, s.full_name, s.gender, g.name as grade_name, s.status
+      FROM students s
+      LEFT JOIN grades g ON s.current_grade_id = g.id
+    `);
+    return res.json(rows);
+  }
+
   const [rows] = await pool.query(`
     SELECT s.id, s.admission_number, s.full_name, s.gender, g.name as grade_name, s.uses_transport, s.status,
       (SELECT COALESCE(SUM(amount), 0) FROM fee_payments WHERE student_id = s.id AND payment_type = 'school_fees') as fees_paid,
@@ -31,10 +41,15 @@ export async function getStudentById(req, res) {
     const [students] = await pool.query('SELECT s.*, g.name as grade_name FROM students s LEFT JOIN grades g ON s.current_grade_id = g.id WHERE s.id = ?', [req.params.id]);
     if (students.length === 0) return res.status(404).json({ error: 'Student not found' });
     const student = students[0];
-    
+
+    const [exams] = await pool.query('SELECT er.id as result_id, e.name as exam_name, sub.name as subject_name, er.subject_id, er.exam_id, er.marks, er.grade, er.teacher_comment FROM exam_results er JOIN exams e ON er.exam_id = e.id JOIN subjects sub ON er.subject_id = sub.id WHERE er.student_id = ?', [req.params.id]);
+    const totalMarks = exams.reduce((sum, ex) => sum + Number(ex.marks), 0);
+    if (normalizeRole(req.user.role) === 'teacher') {
+      return res.json({ ...student, exams, totalMarks });
+    }
+
     const [payments] = await pool.query('SELECT * FROM fee_payments WHERE student_id = ? ORDER BY payment_date DESC', [req.params.id]);
     const [charges] = await pool.query('SELECT * FROM student_charges WHERE student_id = ? ORDER BY created_at DESC', [req.params.id]);
-    const [exams] = await pool.query('SELECT er.id as result_id, e.name as exam_name, sub.name as subject_name, er.subject_id, er.exam_id, er.marks, er.grade, er.teacher_comment FROM exam_results er JOIN exams e ON er.exam_id = e.id JOIN subjects sub ON er.subject_id = sub.id WHERE er.student_id = ?', [req.params.id]);
     
     const expectedPerTerm = 5000;
     const transportPerTerm = 5000;
@@ -50,8 +65,6 @@ export async function getStudentById(req, res) {
     const totalPaid = feesPaid + transportPaid + otherChargesPaid;
     const totalBilled = totalFeesBilled + transportBilled + otherChargesBilled;
     const balance = totalBilled - totalPaid;
-    const totalMarks = exams.reduce((sum, ex) => sum + Number(ex.marks), 0);
-
     const cumPaidT1Fees = payments.filter(p => p.paid_for_term <= 1 && p.payment_type === 'school_fees').reduce((sum, p) => sum + Number(p.amount), 0);
     const cumPaidT2Fees = payments.filter(p => p.paid_for_term <= 2 && p.payment_type === 'school_fees').reduce((sum, p) => sum + Number(p.amount), 0);
     const cumPaidT3Fees = payments.filter(p => p.paid_for_term <= 3 && p.payment_type === 'school_fees').reduce((sum, p) => sum + Number(p.amount), 0);

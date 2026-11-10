@@ -12,13 +12,14 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('token');
     if (token) {
       api.defaults.headers.common.Authorization = `Bearer ${token}`;
-      api.get('/auth/me').then((r) => setUser(r.data.user)).catch(() => logout());
+      api.get('/auth/me').then((r) => setUser(r.data.user)).catch(() => logout()).finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  async function login(username, password) {
-    const { data } = await api.post('/auth/login', { username, password });
+  async function login(username, password, role) {
+    const { data } = await api.post('/auth/login', { username, password, expectedRole: role });
     localStorage.setItem('token', data.token);
     api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
     setUser(data.user);

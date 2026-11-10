@@ -1,5 +1,12 @@
 export function normalizeRole(role) {
-  return (role || '').toLowerCase().replace(/\s+/g, '_');
+  const normalizedRole = (role || '').toLowerCase().replace(/\s+/g, '_');
+  const aliases = {
+    director: 'principal',
+    head_master: 'principal',
+    headmaster: 'principal',
+    class_teacher: 'teacher',
+  };
+  return aliases[normalizedRole] || normalizedRole;
 }
 
 export function canAccessRoute(userRole, allowedRoles = []) {
@@ -11,7 +18,7 @@ export function canAccessRoute(userRole, allowedRoles = []) {
 
 export const routeAccess = {
   dashboard: ['admin', 'director', 'head_master', 'headmaster', 'class_teacher', 'teacher', 'admissions', 'bursar', 'store_keeper'],
-  students: ['admin', 'director', 'head_master', 'headmaster', 'admissions'],
+  students: ['admin', 'director', 'head_master', 'headmaster', 'admissions', 'teacher', 'class_teacher'],
   teachers: ['admin', 'director', 'head_master', 'headmaster'],
   classes: ['admin', 'director', 'head_master', 'headmaster', 'class_teacher'],
   attendance: ['admin', 'director', 'head_master', 'headmaster', 'class_teacher', 'teacher'],

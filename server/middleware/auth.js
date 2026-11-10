@@ -1,7 +1,14 @@
 import jwt from 'jsonwebtoken';
 
-function normalizeRole(role) {
-  return (role || '').toString().toLowerCase().replace(/\s+/g, '_');
+export function normalizeRole(role) {
+  const normalizedRole = (role || '').toString().toLowerCase().replace(/\s+/g, '_');
+  const aliases = {
+    director: 'principal',
+    head_master: 'principal',
+    headmaster: 'principal',
+    class_teacher: 'teacher',
+  };
+  return aliases[normalizedRole] || normalizedRole;
 }
 
 export function authenticate(req, res, next) {

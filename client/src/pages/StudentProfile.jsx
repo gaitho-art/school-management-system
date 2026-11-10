@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { FiTrash, FiEdit } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
+import { normalizeRole } from '../utils/roleAccess';
 
 export default function StudentProfile() {
+  const { user } = useAuth();
+  const isTeacher = normalizeRole(user?.role) === 'teacher';
   const { id } = useParams();
   const [student, setStudent] = useState(null);
+  const [schoolName, setSchoolName] = useState('School Name Not Set');
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
   const [streams, setStreams] = useState([]);
@@ -39,10 +44,61 @@ export default function StudentProfile() {
 
   useEffect(() => { 
     loadStudent(); 
+    api.get('/school')
+      .then(r => setSchoolName(r.data.school_name || 'School Name Not Set'))
+      .catch(() => setSchoolName('School name unavailable'));
     api.get('/subjects').then(r => setSubjects(r.data)).catch(() => {});
     api.get('/grades').then(r => setGrades(r.data)).catch(() => {});
     api.get('/streams').then(r => setStreams(r.data)).catch(() => {});
   }, []);
+
+  const downloadTranscript = () => {
+    const report = document.getElementById('printable-report');
+    if (!report) return;
+    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    })[char]);
+
+    const printableStyles = `
+      body { margin: 0; padding: 24px; color: #000; font: 14px Arial, sans-serif; }
+      #printable-report { max-width: 900px; margin: 0 auto; padding: 24px; }
+      .transcript-school-name { margin: 0 0 8px; font-size: 24px; }
+      #printable-report h1:not(.transcript-school-name) { font-size: 20px; }
+      #printable-report p { margin: 6px 0; }
+      #printable-report table { width: 100%; border-collapse: collapse; text-align: left; }
+      #printable-report th, #printable-report td { padding: 8px; border-bottom: 1px solid #ccc; }
+      #printable-report th { border-bottom: 2px solid #000; }
+      #printable-report .transcript-total { margin-top: 16px; text-align: right; font-weight: bold; }
+      @media print {
+        @page { margin: 15mm; }
+        body { padding: 0; }
+        #printable-report { max-width: none; padding: 0; }
+        tr { break-inside: avoid; }
+      }
+    `;
+    const html = `<!doctype html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>${escapeHtml(schoolName)} - Transcript - ${escapeHtml(student.full_name)}</title>
+          <style>${printableStyles}</style>
+        </head>
+        <body>${report.outerHTML}</body>
+      </html>`;
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${(student.admission_number || student.full_name || 'student').replace(/[^a-z0-9-_]/gi, '-')}-transcript.html`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
 
   const payFee = async (e) => {
     e.preventDefault();
@@ -115,6 +171,7 @@ export default function StudentProfile() {
       {/* Printable Report Card Area */}
       <div id="printable-report" className="bg-white p-8 text-black shadow-lg rounded-xl">
         <div className="text-center border-b-2 border-black pb-4 mb-6">
+          <h1 className="transcript-school-name text-2xl font-bold uppercase">{schoolName}</h1>
           <h1 className="text-2xl font-bold uppercase">Provisional Report Card</h1>
           <p className="text-lg">Student: <span className="font-bold">{student.full_name}</span> | Adm: {student.admission_number}</p>
           <p>Class: {student.grade_name || 'Unassigned'}</p>
@@ -136,7 +193,7 @@ export default function StudentProfile() {
               {student.exams.length === 0 && <tr><td colSpan="4" className="p-2 text-center">No exam records yet</td></tr>}
             </tbody>
           </table>
-          <div className="mt-4 text-right font-bold">Total Marks: {student.totalMarks}</div>
+          <div className="transcript-total mt-4 text-right font-bold">Total Marks: {student.totalMarks}</div>
         </div>
       </div>
 
@@ -146,9 +203,14 @@ export default function StudentProfile() {
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{student.full_name}</h1>
           <p className="text-slate-500">Adm: {student.admission_number} | Class: {student.grade_name || 'Unassigned'} | Guardian: {student.guardian_name} ({student.guardian_phone})</p>
         </div>
-        <button onClick={() => window.print()} className="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-900">Print Transcript Only</button>
+        <div className="flex gap-2">
+          <button onClick={() => window.print()} className="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-900">Print Transcript</button>
+          <button onClick={downloadTranscript} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Download Transcript</button>
+        </div>
       </div>
 
+      {!isTeacher && (
+        <>
       {/* Finances Overview */}
       <div className="no-print space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -241,9 +303,11 @@ export default function StudentProfile() {
           </form>
         </div>
       </div>
+        </>
+      )}
 
       <div className="no-print grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow">
+        {!isTeacher && <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow">
           <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-slate-100">Add Other Charge</h3>
           <form onSubmit={addCharge} className="space-y-4">
             <input type="text" required value={chargeDesc} onChange={e => setChargeDesc(e.target.value)} placeholder="Description (e.g. Term 1 Trip)" className="w-full px-3 py-2 border rounded dark:bg-slate-700" />
@@ -266,10 +330,10 @@ export default function StudentProfile() {
             <input type="text" value={remark} onChange={e => setRemark(e.target.value)} placeholder="Teacher's Remark" className="w-full px-3 py-2 border rounded dark:bg-slate-700" />
             <button className="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700">Add/Update Mark</button>
           </form>
-        </div>
+        </div>}
       </div>
 
-      <div className="no-print grid grid-cols-1 md:grid-cols-2 gap-6">
+      {!isTeacher && <div className="no-print grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow">
           <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-slate-100">Payment & Charges History</h3>
           <ul className="space-y-2">
@@ -278,7 +342,7 @@ export default function StudentProfile() {
                 <div>
                   <span className="font-medium text-green-600">[Payment] {p.receipt_no}</span>
                   <span className="block text-xs text-slate-400 capitalize">{p.payment_type.replace('_', ' ')} | Term {p.paid_for_term} | {new Date(p.payment_date).toLocaleDateString()}</span>
-                </div>
+                </div>}
                 <span className="font-mono text-green-600">KES {Number(p.amount).toLocaleString()}</span>
               </li>
             ))}
