@@ -330,7 +330,7 @@ export default function StudentProfile() {
             <input type="text" value={remark} onChange={e => setRemark(e.target.value)} placeholder="Teacher's Remark" className="w-full px-3 py-2 border rounded dark:bg-slate-700" />
             <button className="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700">Add/Update Mark</button>
           </form>
-        </div>}
+        </div>
       </div>
 
       {!isTeacher && <div className="no-print grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -342,7 +342,7 @@ export default function StudentProfile() {
                 <div>
                   <span className="font-medium text-green-600">[Payment] {p.receipt_no}</span>
                   <span className="block text-xs text-slate-400 capitalize">{p.payment_type.replace('_', ' ')} | Term {p.paid_for_term} | {new Date(p.payment_date).toLocaleDateString()}</span>
-                </div>}
+                </div>
                 <span className="font-mono text-green-600">KES {Number(p.amount).toLocaleString()}</span>
               </li>
             ))}
@@ -358,7 +358,7 @@ export default function StudentProfile() {
             {student.payments.length === 0 && student.charges.length === 0 && <li className="text-slate-500">No transactions recorded yet</li>}
           </ul>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
