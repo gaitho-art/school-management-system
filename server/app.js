@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import routes from './routes/index.js';
 import { testConnection } from './config/db.js';
+import { initializeBloodDonationTables } from './database/bloodDonation.js';
 
 dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -23,4 +24,10 @@ app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
 app.use((err, req, res, next) => res.status(err.status || 500).json({ error: err.message || 'Server error' }));
 
 const PORT = process.env.PORT || 5000;
-testConnection().then(() => app.listen(PORT, () => console.log('API on http://localhost:' + PORT)));
+testConnection()
+	.then(initializeBloodDonationTables)
+	.then(() => app.listen(PORT, () => console.log('API on http://localhost:' + PORT)))
+	.catch((error) => {
+		console.error('Server startup failed:', error.message);
+		process.exit(1);
+	});

@@ -15,8 +15,28 @@ import { getAttendance, getAttendanceReport, markAttendance } from '../controlle
 import { getItems, addItem, updateItem, deleteItem } from '../controllers/inventoryController.js';
 import { authenticate, allow } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
+import { registerBloodUser, loginBloodUser, getBloodProfile, updateBloodProfile, getNearby, createBloodRequest, getMyRequests, respondToRequest, getRequestResponses, updateRequestStatus } from '../controllers/bloodController.js';
 
 const router = Router();
+
+const asyncRoute = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+const requireBloodAccount = (req, res, next) => {
+	if (!['donor', 'recipient', 'hospital'].includes(req.user?.accountType) || req.user.role !== req.user.accountType) {
+		return res.status(403).json({ error: 'A blood-service account is required' });
+	}
+	return next();
+};
+
+router.post('/blood/auth/register', asyncRoute(registerBloodUser));
+router.post('/blood/auth/login', asyncRoute(loginBloodUser));
+router.get('/blood/auth/me', authenticate, requireBloodAccount, asyncRoute(getBloodProfile));
+router.put('/blood/profile', authenticate, requireBloodAccount, asyncRoute(updateBloodProfile));
+router.get('/blood/nearby', authenticate, requireBloodAccount, asyncRoute(getNearby));
+router.post('/blood/requests', authenticate, requireBloodAccount, asyncRoute(createBloodRequest));
+router.get('/blood/requests/mine', authenticate, requireBloodAccount, asyncRoute(getMyRequests));
+router.post('/blood/requests/:id/respond', authenticate, requireBloodAccount, asyncRoute(respondToRequest));
+router.get('/blood/requests/:id/responses', authenticate, requireBloodAccount, asyncRoute(getRequestResponses));
+router.patch('/blood/requests/:id', authenticate, requireBloodAccount, asyncRoute(updateRequestStatus));
 
 router.post('/auth/login', login);
 router.get('/auth/me', authenticate, me);
