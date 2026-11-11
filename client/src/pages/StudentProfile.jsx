@@ -319,7 +319,7 @@ export default function StudentProfile() {
             </select>
             <button className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">Add Charge to Account</button>
           </form>
-        </div>
+        </div>}
 
         <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow">
           <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-slate-100">Record Exam Mark</h3>

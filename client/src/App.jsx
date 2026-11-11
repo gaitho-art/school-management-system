@@ -45,7 +45,7 @@ export default function App() {
             <Route path="/" element={<RoleProtected routeKey="dashboard"><Dashboard /></RoleProtected>} />
             <Route path="/school-profile" element={<RoleProtected routeKey="school-profile"><SchoolProfile /></RoleProtected>} />
             <Route path="/students" element={<RoleProtected routeKey="students"><Students /></RoleProtected>} />
-            <Route path="/students/add" element={<RoleProtected routeKey="students"><AddStudent /></RoleProtected>} />
+            <Route path="/students/add" element={<RoleProtected allowedRoles={['admin', 'admissions']}><AddStudent /></RoleProtected>} />
             <Route path="/students/:id" element={<RoleProtected routeKey="students"><StudentProfile /></RoleProtected>} />
             <Route path="/teachers" element={<RoleProtected routeKey="teachers"><Teachers /></RoleProtected>} />
             <Route path="/teachers/add" element={<RoleProtected routeKey="teachers"><AddTeacher /></RoleProtected>} />
